@@ -1,5 +1,5 @@
-use clap::{Parser, Subcommand};
 use anyhow::Result;
+use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(
@@ -23,59 +23,59 @@ enum Commands {
         /// Path to Cargo.toml (default: current directory)
         #[arg(short, long)]
         manifest_path: Option<String>,
-        
+
         /// Show detailed information
         #[arg(short, long)]
         verbose: bool,
     },
-    
+
     /// Update dependencies interactively
     #[command(alias = "u")]
     Update {
         /// Path to Cargo.toml
         #[arg(short, long)]
         manifest_path: Option<String>,
-        
+
         /// Perform a dry run without making changes
         #[arg(short = 'n', long)]
         dry_run: bool,
-        
+
         /// Update all dependencies without prompting
         #[arg(short, long)]
         all: bool,
     },
-    
+
     /// Fix dependency conflicts
     #[command(alias = "f")]
     Fix {
         /// Path to Cargo.toml
         #[arg(short, long)]
         manifest_path: Option<String>,
-        
+
         /// Automatically apply fixes without prompting
         #[arg(short, long)]
         auto: bool,
     },
-    
+
     /// Clean unused dependencies
     #[command(alias = "cl")]
     Clean {
         /// Path to Cargo.toml
         #[arg(short, long)]
         manifest_path: Option<String>,
-        
+
         /// Perform a dry run
         #[arg(short = 'n', long)]
         dry_run: bool,
     },
-    
+
     /// Check dependency health (security, maintenance status)
     #[command(alias = "h")]
     Health {
         /// Path to Cargo.toml
         #[arg(short, long)]
         manifest_path: Option<String>,
-        
+
         /// Output as JSON
         #[arg(short, long)]
         json: bool,
@@ -92,27 +92,33 @@ fn main() -> Result<()> {
     } else {
         args
     };
-    
+
     let cli = Cli::parse_from(args);
-    
+
     // Import commands module
     use cargo_sane::cli::commands;
-    
+
     match cli.command {
-        Commands::Check { manifest_path, verbose } => {
-            commands::check_command(manifest_path, verbose)
-        }
-        Commands::Update { manifest_path, dry_run, all } => {
-            commands::update_command(manifest_path, dry_run, all)
-        }
-        Commands::Fix { manifest_path, auto } => {
-            commands::fix_command(manifest_path, auto)
-        }
-        Commands::Clean { manifest_path, dry_run } => {
-            commands::clean_command(manifest_path, dry_run)
-        }
-        Commands::Health { manifest_path, json } => {
-            commands::health_command(manifest_path, json)
-        }
+        Commands::Check {
+            manifest_path,
+            verbose,
+        } => commands::check_command(manifest_path, verbose),
+        Commands::Update {
+            manifest_path,
+            dry_run,
+            all,
+        } => commands::update_command(manifest_path, dry_run, all),
+        Commands::Fix {
+            manifest_path,
+            auto,
+        } => commands::fix_command(manifest_path, auto),
+        Commands::Clean {
+            manifest_path,
+            dry_run,
+        } => commands::clean_command(manifest_path, dry_run),
+        Commands::Health {
+            manifest_path,
+            json,
+        } => commands::health_command(manifest_path, json),
     }
 }

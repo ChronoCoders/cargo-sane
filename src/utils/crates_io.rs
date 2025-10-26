@@ -51,8 +51,9 @@ impl CratesIoClient {
     /// Get the latest version of a crate
     pub fn get_latest_version(&self, crate_name: &str) -> Result<Version> {
         let url = format!("{}/crates/{}", CRATES_IO_API, crate_name);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .get(&url)
             .send()
             .context(format!("Failed to fetch info for crate: {}", crate_name))?;
@@ -65,16 +66,15 @@ impl CratesIoClient {
             );
         }
 
-        let crate_response: CrateResponse = response
-            .json()
-            .context(format!("Failed to parse response for crate: {}", crate_name))?;
+        let crate_response: CrateResponse = response.json().context(format!(
+            "Failed to parse response for crate: {}",
+            crate_name
+        ))?;
 
-        let version = Version::parse(&crate_response.krate.newest_version)
-            .context(format!(
-                "Failed to parse version {} for crate {}",
-                crate_response.krate.newest_version,
-                crate_name
-            ))?;
+        let version = Version::parse(&crate_response.krate.newest_version).context(format!(
+            "Failed to parse version {} for crate {}",
+            crate_response.krate.newest_version, crate_name
+        ))?;
 
         Ok(version)
     }
@@ -82,11 +82,11 @@ impl CratesIoClient {
     /// Get all versions of a crate (non-yanked only)
     pub fn get_versions(&self, crate_name: &str) -> Result<Vec<Version>> {
         let url = format!("{}/crates/{}/versions", CRATES_IO_API, crate_name);
-        
-        let response = self.client
-            .get(&url)
-            .send()
-            .context(format!("Failed to fetch versions for crate: {}", crate_name))?;
+
+        let response = self.client.get(&url).send().context(format!(
+            "Failed to fetch versions for crate: {}",
+            crate_name
+        ))?;
 
         if !response.status().is_success() {
             anyhow::bail!(
@@ -96,9 +96,10 @@ impl CratesIoClient {
             );
         }
 
-        let versions_response: VersionsResponse = response
-            .json()
-            .context(format!("Failed to parse versions for crate: {}", crate_name))?;
+        let versions_response: VersionsResponse = response.json().context(format!(
+            "Failed to parse versions for crate: {}",
+            crate_name
+        ))?;
 
         let versions: Vec<Version> = versions_response
             .versions

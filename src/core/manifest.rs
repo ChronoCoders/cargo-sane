@@ -1,10 +1,10 @@
 //! Cargo.toml manifest handling
 
-use std::path::{Path, PathBuf};
-use std::fs;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct Manifest {
@@ -56,8 +56,7 @@ impl Manifest {
             PathBuf::from(p)
         } else {
             // Look for Cargo.toml in current directory
-            let current = std::env::current_dir()
-                .context("Failed to get current directory")?;
+            let current = std::env::current_dir().context("Failed to get current directory")?;
             current.join("Cargo.toml")
         };
 
@@ -73,8 +72,8 @@ impl Manifest {
         let content_str = fs::read_to_string(path)
             .context(format!("Failed to read Cargo.toml at {}", path.display()))?;
 
-        let content: ManifestContent = toml::from_str(&content_str)
-            .context("Failed to parse Cargo.toml")?;
+        let content: ManifestContent =
+            toml::from_str(&content_str).context("Failed to parse Cargo.toml")?;
 
         Ok(Self {
             path: path.to_path_buf(),

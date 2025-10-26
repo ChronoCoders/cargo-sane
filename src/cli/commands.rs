@@ -1,11 +1,13 @@
 //! Command implementations
 
-use crate::Result;
-use crate::core::manifest::Manifest;
-use crate::core::dependency::UpdateType;
 use crate::analyzer::checker::DependencyChecker;
 use crate::cli::output;
+use crate::core::dependency::{Dependency, UpdateType};
+use crate::core::manifest::Manifest;
+use crate::updater::DependencyUpdater;
+use crate::Result;
 use colored::Colorize;
+use dialoguer::{theme::ColorfulTheme, Confirm, MultiSelect};
 
 pub fn check_command(manifest_path: Option<String>, verbose: bool) -> Result<()> {
     output::print_header("🧠 cargo-sane check");
@@ -13,7 +15,7 @@ pub fn check_command(manifest_path: Option<String>, verbose: bool) -> Result<()>
 
     // Load Cargo.toml
     let manifest = Manifest::find(manifest_path)?;
-    
+
     if let Some(name) = manifest.package_name() {
         output::print_info(&format!("Package: {}", name));
     }
@@ -23,7 +25,7 @@ pub fn check_command(manifest_path: Option<String>, verbose: bool) -> Result<()>
     // Check dependencies
     let checker = DependencyChecker::new()?;
     let dependencies = checker.check_dependencies(&manifest)?;
-    
+
     if dependencies.is_empty() {
         output::print_warning("No dependencies found in Cargo.toml");
         return Ok(());
@@ -47,9 +49,21 @@ pub fn check_command(manifest_path: Option<String>, verbose: bool) -> Result<()>
     // Print summary
     println!("📊 Update Summary:");
     println!("  {} Up to date: {}", "✅".green(), up_to_date.len());
-    println!("  {} Patch updates available: {}", "🟢".green(), patch_updates.len());
-    println!("  {} Minor updates available: {}", "🟡".yellow(), minor_updates.len());
-    println!("  {} Major updates available: {}", "🔴".red(), major_updates.len());
+    println!(
+        "  {} Patch updates available: {}",
+        "🟢".green(),
+        patch_updates.len()
+    );
+    println!(
+        "  {} Minor updates available: {}",
+        "🟡".yellow(),
+        minor_updates.len()
+    );
+    println!(
+        "  {} Major updates available: {}",
+        "🔴".red(),
+        major_updates.len()
+    );
     println!();
 
     // Show patch updates
@@ -113,7 +127,11 @@ pub fn check_command(manifest_path: Option<String>, verbose: bool) -> Result<()>
     if verbose && !up_to_date.is_empty() {
         println!("{}", "✅ Up to date:".green().bold());
         for dep in up_to_date {
-            println!("  • {} {}", dep.name, dep.current_version.to_string().green());
+            println!(
+                "  • {} {}",
+                dep.name,
+                dep.current_version.to_string().green()
+            );
         }
         println!();
     }
@@ -121,20 +139,160 @@ pub fn check_command(manifest_path: Option<String>, verbose: bool) -> Result<()>
     if patch_updates.is_empty() && minor_updates.is_empty() && major_updates.is_empty() {
         output::print_success("All dependencies are up to date! 🎉");
     } else {
-        println!("{}", "Run `cargo sane update` to update dependencies interactively.".dimmed());
+        println!(
+            "{}",
+            "Run `cargo sane update` to update dependencies interactively.".dimmed()
+        );
     }
-    
+
     Ok(())
 }
 
-pub fn update_command(
-    manifest_path: Option<String>,
-    dry_run: bool,
-    all: bool,
-) -> Result<()> {
-    let _ = (manifest_path, dry_run, all);
-    output::print_warning("Update command not yet implemented");
+pub fn update_command(manifest_path: Option<String>, dry_run: bool, all: bool) -> Result<()> {
+    output::print_header("🧠 cargo-sane update");
+    println!();
+
+    // Load Cargo.toml
+    let manifest = Manifest::find(manifest_path)?;
+
+    if let Some(name) = manifest.package_name() {
+        output::print_info(&format!("Package: {}", name));
+    }
+    output::print_info(&format!("Manifest: {}", manifest.path.display()));
+    println!();
+
+    // Check dependencies
+    let checker = DependencyChecker::new()?;
+    let dependencies = checker.check_dependencies(&manifest)?;
+
+    // Filter only dependencies with updates
+    let updatable: Vec<&Dependency> = dependencies.iter().filter(|d| d.has_update()).collect();
+
+    if updatable.is_empty() {
+        output::print_success("All dependencies are up to date! 🎉");
+        return Ok(());
+    }
+
+    println!(
+        "Found {} dependencies with updates available.\n",
+        updatable.len()
+    );
+
+    // Select which dependencies to update
+    let to_update = if all {
+        updatable
+    } else {
+        select_dependencies_to_update(&updatable)?
+    };
+
+    if to_update.is_empty() {
+        output::print_info("No dependencies selected for update.");
+        return Ok(());
+    }
+
+    // Show what will be updated
+    println!("\n{}", "📝 Updates to apply:".bold());
+    for dep in &to_update {
+        if let Some(latest) = &dep.latest_version {
+            let update_type = match dep.update_type() {
+                UpdateType::Patch => "🟢 PATCH",
+                UpdateType::Minor => "🟡 MINOR",
+                UpdateType::Major => "🔴 MAJOR",
+                UpdateType::UpToDate => "✅ UP-TO-DATE",
+            };
+            println!(
+                "  {} {} {} → {}",
+                update_type,
+                dep.name.bold(),
+                dep.current_version.to_string().dimmed(),
+                latest.to_string().cyan()
+            );
+        }
+    }
+    println!();
+
+    // Confirm unless --all flag is used
+    if !all && !dry_run {
+        let confirm = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Apply these updates?")
+            .default(true)
+            .interact()?;
+
+        if !confirm {
+            output::print_info("Update cancelled.");
+            return Ok(());
+        }
+    }
+
+    if dry_run {
+        output::print_info("Dry-run mode: No changes will be made.");
+        return Ok(());
+    }
+
+    // Create updater
+    let mut updater = DependencyUpdater::new(manifest)?;
+
+    // Apply updates
+    println!("\n{}", "🔄 Applying updates...".bold());
+    for dep in to_update {
+        if let Some(latest) = &dep.latest_version {
+            match updater.update_dependency(dep, &latest.to_string()) {
+                Ok(_) => {
+                    println!(
+                        "  ✓ Updated {} to {}",
+                        dep.name.green(),
+                        latest.to_string().cyan()
+                    );
+                }
+                Err(e) => {
+                    eprintln!("  ✗ Failed to update {}: {}", dep.name.red(), e);
+                }
+            }
+        }
+    }
+
+    // Save changes
+    updater.save()?;
+    println!();
+    output::print_success("Cargo.toml updated successfully!");
+    output::print_info("Backup saved as Cargo.toml.backup");
+    println!();
+    println!(
+        "{}",
+        "Don't forget to run `cargo check` to verify everything still compiles!".dimmed()
+    );
+
     Ok(())
+}
+
+/// Interactive selection of dependencies to update
+fn select_dependencies_to_update<'a>(deps: &[&'a Dependency]) -> Result<Vec<&'a Dependency>> {
+    let items: Vec<String> = deps
+        .iter()
+        .map(|d| {
+            let update_type = match d.update_type() {
+                UpdateType::Patch => "🟢",
+                UpdateType::Minor => "🟡",
+                UpdateType::Major => "🔴",
+                UpdateType::UpToDate => "✅",
+            };
+            format!(
+                "{} {} {} → {}",
+                update_type,
+                d.name,
+                d.current_version,
+                d.latest_version.as_ref().unwrap()
+            )
+        })
+        .collect();
+
+    let selections = MultiSelect::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select dependencies to update (Space to select, Enter to confirm)")
+        .items(&items)
+        .interact()?;
+
+    let selected: Vec<&Dependency> = selections.iter().map(|&i| deps[i]).collect();
+    Ok(selected)
 }
 
 pub fn fix_command(manifest_path: Option<String>, auto: bool) -> Result<()> {

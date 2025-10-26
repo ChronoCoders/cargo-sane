@@ -2,15 +2,19 @@
 
 **Stop losing your mind over Rust dependency conflicts.**
 
-`cargo-sane` is a command-line tool that helps you manage Rust dependencies intelligently. It checks for updates, categorizes them by severity, and (soon) updates them interactively.
+`cargo-sane` is a command-line tool that helps you manage Rust dependencies intelligently. It checks for updates, categorizes them by severity, and updates them interactively.
+
+[![Crates.io](https://img.shields.io/crates/v/cargo-sane.svg)](https://crates.io/crates/cargo-sane)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 
 ## ✨ Features
 
 - 🔍 **Smart Dependency Analysis** - Scans your `Cargo.toml` and checks crates.io for updates
 - 📊 **Categorized Updates** - Separates updates into patch, minor, and major versions
+- ⚡ **Interactive Updates** - Select which dependencies to update with a beautiful TUI
 - 🎨 **Beautiful Output** - Color-coded, easy-to-read terminal interface
-- ⚡ **Fast** - Concurrent API calls with progress indicators
-- 🔒 **Safe** - Shows what will change before you commit
+- 💾 **Safe Updates** - Automatic backup before making changes
+- 🚀 **Fast** - Concurrent API calls with progress indicators
 
 ## 📦 Installation
 ```bash
@@ -19,7 +23,7 @@ cargo install cargo-sane
 
 Or build from source:
 ```bash
-git clone https://github.com/yourusername/cargo-sane
+git clone https://github.com/ChronoCoders/cargo-sane
 cd cargo-sane
 cargo install --path .
 ```
@@ -27,6 +31,8 @@ cargo install --path .
 ## 🚀 Usage
 
 ### Check for Updates
+
+Analyze your dependencies and see what's available:
 ```bash
 cargo sane check
 ```
@@ -57,41 +63,116 @@ cargo sane check
 Run `cargo sane update` to update dependencies interactively.
 ```
 
+### Update Dependencies
+
+Update dependencies interactively:
+```bash
+cargo sane update
+```
+
+This will:
+1. Show you all available updates
+2. Let you select which ones to apply (spacebar to select, enter to confirm)
+3. Update your `Cargo.toml` (with automatic backup)
+4. Preserve all formatting, comments, and features
+
+**Update all dependencies automatically:**
+```bash
+cargo sane update --all
+```
+
+**Dry run (preview without changing):**
+```bash
+cargo sane update --dry-run
+```
+
 ### Verbose Mode
+
+Get detailed information about updates:
 ```bash
 cargo sane check --verbose
 ```
 
-Shows additional details about each update type.
-
 ### Specify Cargo.toml Path
+
+Work with a specific manifest:
 ```bash
 cargo sane check --manifest-path /path/to/Cargo.toml
+cargo sane update --manifest-path /path/to/Cargo.toml
 ```
 
 ## 📋 Commands
 
-- `cargo sane check` - Analyze dependencies and show available updates
-- `cargo sane update` - *(Coming soon)* Update dependencies interactively
-- `cargo sane fix` - *(Coming soon)* Fix dependency conflicts
-- `cargo sane clean` - *(Coming soon)* Remove unused dependencies
-- `cargo sane health` - *(Coming soon)* Check for security vulnerabilities
+| Command | Description | Status |
+|---------|-------------|--------|
+| `check` | Analyze dependencies and show available updates | ✅ Available |
+| `update` | Update dependencies interactively | ✅ Available |
+| `fix` | Fix dependency conflicts | 🚧 Coming soon |
+| `clean` | Remove unused dependencies | 🚧 Coming soon |
+| `health` | Check for security vulnerabilities | 🚧 Coming soon |
+
+## 🎯 Why cargo-sane?
+
+Managing Rust dependencies can be frustrating:
+- 😤 Manually checking for updates is tedious
+- 😵 Version conflicts are confusing
+- 😱 Breaking changes can break your build
+- 🤯 No easy way to see what changed
+
+**cargo-sane solves this:**
+- ✅ Automatically checks all dependencies
+- ✅ Shows you exactly what will change
+- ✅ Categorizes updates by risk (patch/minor/major)
+- ✅ Lets you choose what to update
+- ✅ Creates backups automatically
+- ✅ Works with all Cargo.toml formats
+
+## 🛡️ Safety Features
+
+- **Automatic Backup**: Creates `Cargo.toml.backup` before any changes
+- **Dry Run Mode**: Preview changes without modifying files
+- **Format Preservation**: Keeps your formatting, comments, and structure
+- **Selective Updates**: Choose exactly which dependencies to update
+
+## 📊 Supported Cargo.toml Formats
+
+cargo-sane handles all dependency formats:
+```toml
+# Simple
+serde = "1.0"
+
+# With features
+tokio = { version = "1.35", features = ["full"] }
+
+# Optional dependencies
+clap = { version = "4.5", optional = true }
+
+# With comments (preserved!)
+regex = "1.11"  # For pattern matching
+```
 
 ## 🎯 Roadmap
 
 - [x] Smart dependency checking
 - [x] Update categorization (patch/minor/major)
+- [x] Interactive dependency updates
 - [x] Beautiful terminal output
-- [ ] Interactive dependency updates
 - [ ] Conflict resolution
 - [ ] Security vulnerability scanning (RustSec integration)
 - [ ] Unused dependency detection
 - [ ] CI/CD integration (GitHub Actions)
 - [ ] Configuration file support
+- [ ] Workspace support
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📝 License
 
@@ -108,9 +189,12 @@ Built with:
 - [clap](https://github.com/clap-rs/clap) - Command line argument parsing
 - [reqwest](https://github.com/seanmonstar/reqwest) - HTTP client
 - [semver](https://github.com/dtolnay/semver) - Semantic version parsing
-- [colored](https://github.com/mackwic/colored) - Terminal colors
+- [colored](https://github.com/colored-rs/colored) - Terminal colors
 - [indicatif](https://github.com/console-rs/indicatif) - Progress bars
+- [dialoguer](https://github.com/console-rs/dialoguer) - Interactive prompts
 
 ---
 
-Made with ❤️ by Rust developers, for Rust developers.
+**Made with ❤️ by Rust developers, for Rust developers.**
+
+*Stop fighting with dependencies. Stay sane.* 🧠

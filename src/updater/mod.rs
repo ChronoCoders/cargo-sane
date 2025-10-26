@@ -2,3 +2,5 @@
 
 pub mod resolver;
 pub mod update;
+
+pub use update::DependencyUpdater;

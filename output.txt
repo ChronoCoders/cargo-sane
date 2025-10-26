@@ -1,0 +1,38 @@
+
+🧠 cargo-sane update
+
+ℹ Package: cargo-sane
+ℹ Manifest: C:\cargo-sane\Cargo.toml
+
+
+Found 12 dependencies with updates available.
+
+
+📝 Updates to apply:
+  🟡 MINOR dialoguer 0.11.0 → 0.12.0
+  🟢 PATCH serde_json 1.0.0 → 1.0.145
+  🟡 MINOR indicatif 0.17.0 → 0.18.1
+  🟢 PATCH clap 4.5.0 → 4.5.50
+  🟡 MINOR tokio 1.35.0 → 1.47.2
+  🟡 MINOR toml 0.8.0 → 0.9.8
+  🔴 MAJOR colored 2.1.0 → 3.0.0
+  🟢 PATCH semver 1.0.0 → 1.0.27
+  🟡 MINOR reqwest 0.11.0 → 0.12.24
+  🟢 PATCH serde 1.0.0 → 1.0.228
+  🟢 PATCH anyhow 1.0.0 → 1.0.100
+  🔴 MAJOR thiserror 1.0.0 → 2.0.17
+
+
+🔄 Applying updates...
+  ✓ Updated dialoguer to 0.12.0
+  ✓ Updated serde_json to 1.0.145
+  ✓ Updated indicatif to 0.18.1
+  ✓ Updated toml to 0.9.8
+  ✓ Updated colored to 3.0.0
+  ✓ Updated anyhow to 1.0.100
+  ✓ Updated thiserror to 2.0.17
+
+✓ Cargo.toml updated successfully!
+ℹ Backup saved as Cargo.toml.backup
+
+Don't forget to run `cargo check` to verify everything still compiles!

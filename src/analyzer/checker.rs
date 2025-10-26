@@ -31,7 +31,9 @@ impl DependencyChecker {
         let pb = ProgressBar::new(deps.len() as u64);
         pb.set_style(
             ProgressStyle::default_bar()
-                .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+                .template(
+                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}",
+                )
                 .expect("Failed to set progress style")
                 .progress_chars("#>-"),
         );
@@ -58,7 +60,10 @@ impl DependencyChecker {
             let current_version = match parse_version_req(version_str) {
                 Some(v) => v,
                 None => {
-                    eprintln!("Warning: Could not parse version '{}' for {}", version_str, name);
+                    eprintln!(
+                        "Warning: Could not parse version '{}' for {}",
+                        version_str, name
+                    );
                     pb.inc(1);
                     continue;
                 }
@@ -133,7 +138,7 @@ fn parse_version_req(req: &str) -> Option<Version> {
 ///   "1.0.5" -> "1.0.5"
 fn normalize_version(version: &str) -> String {
     let parts: Vec<&str> = version.split('.').collect();
-    
+
     match parts.len() {
         1 => format!("{}.0.0", parts[0]),
         2 => format!("{}.{}.0", parts[0], parts[1]),
@@ -155,29 +160,11 @@ mod tests {
 
     #[test]
     fn test_parse_version_req() {
-        assert_eq!(
-            parse_version_req("1.0.5"),
-            Some(Version::new(1, 0, 5))
-        );
-        assert_eq!(
-            parse_version_req("1.0"),
-            Some(Version::new(1, 0, 0))
-        );
-        assert_eq!(
-            parse_version_req("1"),
-            Some(Version::new(1, 0, 0))
-        );
-        assert_eq!(
-            parse_version_req("^1.0.5"),
-            Some(Version::new(1, 0, 5))
-        );
-        assert_eq!(
-            parse_version_req("~1.0.5"),
-            Some(Version::new(1, 0, 5))
-        );
-        assert_eq!(
-            parse_version_req("1.35"),
-            Some(Version::new(1, 35, 0))
-        );
+        assert_eq!(parse_version_req("1.0.5"), Some(Version::new(1, 0, 5)));
+        assert_eq!(parse_version_req("1.0"), Some(Version::new(1, 0, 0)));
+        assert_eq!(parse_version_req("1"), Some(Version::new(1, 0, 0)));
+        assert_eq!(parse_version_req("^1.0.5"), Some(Version::new(1, 0, 5)));
+        assert_eq!(parse_version_req("~1.0.5"), Some(Version::new(1, 0, 5)));
+        assert_eq!(parse_version_req("1.35"), Some(Version::new(1, 35, 0)));
     }
 }
