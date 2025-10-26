@@ -5,6 +5,7 @@
 `cargo-sane` is a command-line tool that helps you manage Rust dependencies intelligently. It checks for updates, categorizes them by severity, and updates them interactively.
 
 [![Crates.io](https://img.shields.io/crates/v/cargo-sane.svg)](https://crates.io/crates/cargo-sane)
+[![Downloads](https://img.shields.io/crates/d/cargo-sane.svg)](https://crates.io/crates/cargo-sane)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 
 ## ✨ Features
