@@ -1,12 +1,12 @@
 [package]
 name = "cargo-sane"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Altug Tatlisu <contact@chronocoder.dev>"]
 description = "Stop losing your mind over Rust dependency conflicts"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/yourusername/cargo-sane"
-homepage = "https://github.com/yourusername/cargo-sane"
+repository = "https://github.com/chronocoders/cargo-sane"
+homepage = "https://github.com/chronocoders/cargo-sane"
 documentation = "https://docs.rs/cargo-sane"
 readme = "README.md"
 keywords = ["cargo", "dependencies", "cli", "tools", "rust"]
