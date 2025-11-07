@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="cargo-sane - Stop losing your mind over Rust dependency conflicts. Smart dependency management for Cargo projects.">
+    <meta name="keywords" content="rust, cargo, dependencies, cli, tool, developer-tools">
+    <meta property="og:title" content="cargo-sane - Rust Dependency Management">
+    <meta property="og:description" content="Stop losing your mind over Rust dependency conflicts">
+    <meta property="og:image" content="https://chronocoders.github.io/cargo-sane/cargo-sane.webp">
+    <meta property="og:url" content="https://chronocoders.github.io/cargo-sane/">
+    <title>cargo-sane - Stop losing your mind over Rust dependencies</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --rust-orange: #CE422B;
+            --dark-bg: #1a1d23;
+            --darker-bg: #0f1116;
+            --cyan: #00d9ff;
+            --light-text: #e0e6ed;
+            --dim-text: #8892a6;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--darker-bg) 0%, var(--dark-bg) 100%);
+            color: var(--light-text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            padding: 60px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--cyan), var(--rust-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            color: var(--dim-text);
+            margin-bottom: 40px;
+        }
+
+        /* CTA Buttons */
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 60px;
+        }
+
+        .btn {
+            padding: 15px 35px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--rust-orange), #ff6b4a);
+            color: white;
+            box-shadow: 0 4px 15px rgba(206, 66, 43, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(206, 66, 43, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light-text);
+            border: 2px solid var(--cyan);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 217, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Hero Image */
+        .hero-image {
+            text-align: center;
+            margin: 60px 0;
+            position: relative;
+        }
+
+        .hero-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 1s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+            color: var(--cyan);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--cyan);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--cyan);
+        }
+
+        .feature-card p {
+            color: var(--dim-text);
+            line-height: 1.8;
+        }
+
+        /* Code Demo */
+        .demo-section {
+            padding: 80px 0;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .demo-section h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            color: var(--rust-orange);
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            overflow-x: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+        }
+
+        .terminal-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .terminal pre {
+            color: #d4d4d4;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .cmd { color: var(--cyan); }
+        .output { color: #8be9fd; }
+        .success { color: #50fa7b; }
+        .warning { color: #f1fa8c; }
+        .error { color: #ff5555; }
+
+        /* Stats Section */
+        .stats {
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+        }
+
+        .stat-card {
+            padding: 30px;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--cyan), var(--rust-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--dim-text);
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        /* Installation Section */
+        .installation {
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .installation h2 {
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            color: var(--cyan);
+        }
+
+        .install-code {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px 40px;
+            border-radius: 10px;
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.3rem;
+            color: var(--rust-orange);
+            border: 2px solid var(--rust-orange);
+            margin-bottom: 30px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 0;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--dim-text);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--cyan);
+        }
+
+        .copyright {
+            color: var(--dim-text);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .tagline {
+                font-size: 1.2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🧠</div>
+            <h1>cargo-sane</h1>
+            <p class="tagline">Stop losing your mind over Rust dependencies</p>
+            
+            <div class="cta-buttons">
+                <a href="https://crates.io/crates/cargo-sane" class="btn btn-primary">Install Now</a>
+                <a href="https://github.com/ChronoCoders/cargo-sane" class="btn btn-secondary">View on GitHub</a>
+            </div>
+        </header>
+
+        <div class="hero-image">
+            <img src="cargo-sane.webp" alt="cargo-sane dashboard">
+        </div>
+
+        <section class="features">
+            <h2>✨ Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🔍</span>
+                    <h3>Smart Analysis</h3>
+                    <p>Automatically scans your Cargo.toml and checks crates.io for the latest versions of all dependencies.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">👆</span>
+                    <h3>Interactive Updates</h3>
+                    <p>Beautiful TUI lets you select exactly which dependencies to update with spacebar and enter.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">⚙️</span>
+                    <h3>Format Preservation</h3>
+                    <p>Keeps all your formatting, comments, and features intact. Only updates version numbers.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">💾</span>
+                    <h3>Auto Backups</h3>
+                    <p>Creates Cargo.toml.backup automatically before making any changes. Safety first!</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">📊</span>
+                    <h3>Categorized Updates</h3>
+                    <p>See updates color-coded by risk: patch (green), minor (yellow), major (red).</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">⚡</span>
+                    <h3>Lightning Fast</h3>
+                    <p>Concurrent API calls with progress bars. Check dozens of dependencies in seconds.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="demo-section">
+            <div class="container">
+                <h2>🚀 See It In Action</h2>
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <span class="terminal-dot dot-red"></span>
+                        <span class="terminal-dot dot-yellow"></span>
+                        <span class="terminal-dot dot-green"></span>
+                    </div>
+                    <pre><span class="cmd">$ cargo sane check</span>
+
+<span class="output">🧠 cargo-sane check</span>
+
+<span class="output">ℹ Package: my-project
+ℹ Manifest: /path/to/Cargo.toml</span>
+
+<span class="output">📊 Update Summary:</span>
+  <span class="success">✅ Up to date: 3</span>
+  <span class="success">🟢 Patch updates available: 5</span>
+  <span class="warning">🟡 Minor updates available: 2</span>
+  <span class="error">🔴 Major updates available: 1</span>
+
+<span class="success">🟢 Patch updates:</span>
+  • <strong>serde</strong> 1.0.195 → 1.0.228
+  • <strong>anyhow</strong> 1.0.89 → 1.0.100
+
+<span class="warning">🟡 Minor updates:</span>
+  • <strong>tokio</strong> 1.35.0 → 1.47.2
+
+<span class="error">🔴 Major updates:</span>
+  • <strong>colored</strong> 2.1.0 → 3.0.0
+
+<span class="cmd">$ cargo sane update</span>
+<span class="output">✓ Updated 8 dependencies successfully!</span></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="installation">
+            <h2>📦 Installation</h2>
+            <div class="install-code">cargo install cargo-sane</div>
+            <p style="color: var(--dim-text); margin-bottom: 30px;">Requires Rust 1.70 or later</p>
+            
+            <div class="cta-buttons">
+                <a href="https://crates.io/crates/cargo-sane" class="btn btn-primary">Get Started</a>
+                <a href="https://github.com/ChronoCoders/cargo-sane/blob/main/README.md" class="btn btn-secondary">Read Docs</a>
+            </div>
+        </section>
+
+        <section class="stats">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">v0.2.0</div>
+                    <div class="stat-label">Latest Version</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Open Source</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2</div>
+                    <div class="stat-label">Commands Available</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">🦀</div>
+                    <div class="stat-label">Pure Rust</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://crates.io/crates/cargo-sane">Crates.io</a>
+                <a href="https://github.com/ChronoCoders/cargo-sane">GitHub</a>
+                <a href="https://github.com/ChronoCoders/cargo-sane/blob/main/CHANGELOG.md">Changelog</a>
+                <a href="https://github.com/ChronoCoders/cargo-sane/issues">Issues</a>
+                <a href="https://github.com/ChronoCoders/cargo-sane/blob/main/LICENSE-MIT">License</a>
+            </div>
+            <p class="copyright">Made with ❤️ by Rust developers, for Rust developers.</p>
+        </div>
+    </footer>
+</body>
+</html>
