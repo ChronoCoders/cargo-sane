@@ -7,7 +7,6 @@
     <meta name="keywords" content="rust, cargo, dependencies, cli, tool, developer-tools">
     <meta property="og:title" content="cargo-sane - Rust Dependency Management">
     <meta property="og:description" content="Stop losing your mind over Rust dependency conflicts">
-    <meta property="og:image" content="https://chronocoders.github.io/cargo-sane/cargo-sane.webp">
     <meta property="og:url" content="https://chronocoders.github.io/cargo-sane/">
     <title>cargo-sane - Stop losing your mind over Rust dependencies</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,7 +44,7 @@
 
         /* Header */
         header {
-            padding: 60px 0;
+            padding: 80px 0 60px 0;
             text-align: center;
             position: relative;
         }
@@ -83,7 +82,7 @@
             gap: 20px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 60px;
+            margin-bottom: 40px;
         }
 
         .btn {
@@ -118,26 +117,6 @@
         .btn-secondary:hover {
             background: rgba(0, 217, 255, 0.2);
             transform: translateY(-2px);
-        }
-
-        /* Hero Image */
-        .hero-image {
-            text-align: center;
-            margin: 60px 0;
-            position: relative;
-        }
-
-        .hero-image img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 1s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Features Section */
@@ -365,10 +344,6 @@
                 <a href="https://github.com/ChronoCoders/cargo-sane" class="btn btn-secondary">View on GitHub</a>
             </div>
         </header>
-
-        <div class="hero-image">
-            <img src="cargo-sane.webp" alt="cargo-sane dashboard">
-        </div>
 
         <section class="features">
             <h2>✨ Features</h2>
