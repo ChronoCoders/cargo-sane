@@ -13,8 +13,12 @@
 - 🔍 **Smart Dependency Analysis** - Scans your `Cargo.toml` and checks crates.io for updates
 - 📊 **Categorized Updates** - Separates updates into patch, minor, and major versions
 - ⚡ **Interactive Updates** - Select which dependencies to update with a beautiful TUI
+- 🛡️ **Security Scanning** - Check for known vulnerabilities in your dependencies
+- 🧹 **Unused Detection** - Find and remove dependencies you're not using
+- 🔧 **Conflict Resolution** - Identify and fix version conflicts in your dependency tree
 - 🎨 **Beautiful Output** - Color-coded, easy-to-read terminal interface
 - 💾 **Safe Updates** - Automatic backup before making changes
+- ⚙️ **Configurable** - Customize behavior with configuration files
 - 🚀 **Fast** - Concurrent API calls with progress indicators
 
 ## 📦 Installation
@@ -102,15 +106,101 @@ cargo sane check --manifest-path /path/to/Cargo.toml
 cargo sane update --manifest-path /path/to/Cargo.toml
 ```
 
+### Check for Security Vulnerabilities
+
+Scan your dependencies for known security issues:
+```bash
+cargo sane health
+```
+
+**Example output:**
+```
+🧠 cargo-sane health
+
+ℹ Package: my-project
+ℹ Manifest: /path/to/Cargo.toml
+
+🏥 Health Report:
+  Total dependencies: 12
+  ⚠️ Vulnerable: 2
+  Outdated: 5
+
+📊 Vulnerability Summary:
+  🟠 High: 1
+  🟡 Medium: 1
+
+🚨 Vulnerabilities Found:
+
+  🟠 hyper 0.14.5 (HIGH)
+  ID: RUSTSEC-2021-0078
+  Title: Integer overflow in hyper's parsing
+  Fix: Update to 0.14.10
+```
+
+**JSON output for CI/CD:**
+```bash
+cargo sane health --json
+```
+
+### Find Unused Dependencies
+
+Detect dependencies that aren't being used in your code:
+```bash
+cargo sane clean --dry-run
+```
+
+This will scan your source files and identify dependencies declared in `Cargo.toml` but not imported in your code.
+
+**Remove unused dependencies:**
+```bash
+cargo sane clean
+```
+
+### Fix Dependency Conflicts
+
+Analyze and resolve version conflicts:
+```bash
+cargo sane fix
+```
+
+**Auto-fix mode:**
+```bash
+cargo sane fix --auto
+```
+
 ## 📋 Commands
 
 | Command | Description | Status |
 |---------|-------------|--------|
 | `check` | Analyze dependencies and show available updates | ✅ Available |
 | `update` | Update dependencies interactively | ✅ Available |
-| `fix` | Fix dependency conflicts | 🚧 Coming soon |
-| `clean` | Remove unused dependencies | 🚧 Coming soon |
-| `health` | Check for security vulnerabilities | 🚧 Coming soon |
+| `fix` | Fix dependency conflicts | ✅ Available |
+| `clean` | Remove unused dependencies | ✅ Available |
+| `health` | Check for security vulnerabilities | ✅ Available |
+
+## ⚙️ Configuration
+
+Create a `.cargo-sane.toml` file in your project directory or `~/.config/cargo-sane/config.toml` for global settings:
+
+```toml
+# Automatically update patch versions without prompting
+auto_update_patch = false
+
+# Automatically update minor versions without prompting
+auto_update_minor = false
+
+# Crates to ignore during checks
+ignore_crates = ["internal-crate"]
+
+# Show verbose output by default
+verbose = false
+
+# Create backups before modifying Cargo.toml
+create_backups = true
+
+# Check for security vulnerabilities
+check_security = true
+```
 
 ## 🎯 Why cargo-sane?
 
@@ -158,12 +248,14 @@ regex = "1.11"  # For pattern matching
 - [x] Update categorization (patch/minor/major)
 - [x] Interactive dependency updates
 - [x] Beautiful terminal output
-- [ ] Conflict resolution
-- [ ] Security vulnerability scanning (RustSec integration)
-- [ ] Unused dependency detection
+- [x] Conflict resolution
+- [x] Security vulnerability scanning (RustSec integration)
+- [x] Unused dependency detection
+- [x] Configuration file support
 - [ ] CI/CD integration (GitHub Actions)
-- [ ] Configuration file support
 - [ ] Workspace support
+- [ ] Dependency license checking
+- [ ] Automated PR creation for updates
 
 ## 🤝 Contributing
 
