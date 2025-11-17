@@ -66,6 +66,43 @@ impl DependencyUpdater {
         );
     }
 
+    /// Remove a dependency from Cargo.toml
+    pub fn remove_dependency(&mut self, dep_name: &str) -> Result<()> {
+        // Strategy 1: Remove detailed format - name = { version = "x.y.z", ... }
+        // This handles multi-line detailed specs too
+        let detailed_pattern = format!(
+            r#"(?m)^\s*{}\s*=\s*\{{[^}}]*\}}\s*\n?"#,
+            regex::escape(dep_name)
+        );
+
+        if let Ok(re) = Regex::new(&detailed_pattern) {
+            if re.is_match(&self.original_content) {
+                let new_content = re.replace(&self.original_content, "");
+                self.original_content = new_content.to_string();
+                return Ok(());
+            }
+        }
+
+        // Strategy 2: Remove simple format - name = "x.y.z"
+        let simple_pattern = format!(
+            r#"(?m)^\s*{}\s*=\s*"[^"]*"\s*\n?"#,
+            regex::escape(dep_name)
+        );
+
+        if let Ok(re) = Regex::new(&simple_pattern) {
+            if re.is_match(&self.original_content) {
+                let new_content = re.replace(&self.original_content, "");
+                self.original_content = new_content.to_string();
+                return Ok(());
+            }
+        }
+
+        anyhow::bail!(
+            "Could not find dependency {} in Cargo.toml to remove",
+            dep_name
+        );
+    }
+
     /// Save the updated Cargo.toml
     pub fn save(&self) -> Result<()> {
         // Create backup

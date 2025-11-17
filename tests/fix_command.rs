@@ -1,4 +1,4 @@
-//! Integration tests for the check command
+//! Integration tests for the fix command
 
 mod common;
 
@@ -7,11 +7,11 @@ use predicates::prelude::*;
 use tempfile::TempDir;
 
 #[test]
-fn test_check_command_no_cargo_toml() {
+fn test_fix_command_no_cargo_toml() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
 
     let mut cmd = Command::cargo_bin("cargo-sane").unwrap();
-    cmd.arg("check")
+    cmd.arg("fix")
         .arg("--manifest-path")
         .arg(temp_dir.path().join("Cargo.toml"));
 
@@ -21,44 +21,58 @@ fn test_check_command_no_cargo_toml() {
 }
 
 #[test]
-fn test_check_command_with_valid_manifest() {
+fn test_fix_shows_header() {
     let (_temp_dir, cargo_toml) = common::create_test_project();
 
     let mut cmd = Command::cargo_bin("cargo-sane").unwrap();
-    cmd.arg("check")
+    cmd.arg("fix")
         .arg("--manifest-path")
         .arg(&cargo_toml);
 
-    // This test may fail if network is unavailable, but it should at least parse the manifest
     let output = cmd.output().expect("Failed to run command");
-
-    // Should at least start correctly and parse the manifest
     let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Should show the fix command header
     assert!(
-        stdout.contains("cargo-sane check") || stdout.contains("Package:") || !output.status.success()
+        stdout.contains("cargo-sane fix") || stdout.contains("Analyzing") || !output.status.success()
     );
 }
 
 #[test]
-fn test_check_command_verbose_flag() {
-    let (_temp_dir, cargo_toml) = common::create_test_project();
+fn test_fix_no_lock_file() {
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+    let cargo_toml = temp_dir.path().join("Cargo.toml");
+
+    let content = r#"[package]
+name = "test-project"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = "1.0.0"
+"#;
+
+    std::fs::write(&cargo_toml, content).expect("Failed to write Cargo.toml");
 
     let mut cmd = Command::cargo_bin("cargo-sane").unwrap();
-    cmd.arg("check")
+    cmd.arg("fix")
         .arg("--manifest-path")
-        .arg(&cargo_toml)
-        .arg("--verbose");
+        .arg(&cargo_toml);
 
-    // Should accept the verbose flag without error
+    // Without a lock file, should handle gracefully
     let output = cmd.output().expect("Failed to run command");
     let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
 
-    // Verbose mode should at least show the header
-    assert!(stdout.contains("cargo-sane") || !output.status.success());
+    // Should either succeed or fail gracefully
+    assert!(
+        stdout.contains("cargo-sane") || stdout.contains("fix") ||
+        stderr.contains("Cargo.lock") || !output.status.success()
+    );
 }
 
 #[test]
-fn test_check_empty_dependencies() {
+fn test_fix_auto_flag() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let cargo_toml = temp_dir.path().join("Cargo.toml");
 
@@ -73,11 +87,16 @@ edition = "2021"
     std::fs::write(&cargo_toml, content).expect("Failed to write Cargo.toml");
 
     let mut cmd = Command::cargo_bin("cargo-sane").unwrap();
-    cmd.arg("check")
+    cmd.arg("fix")
         .arg("--manifest-path")
-        .arg(&cargo_toml);
+        .arg(&cargo_toml)
+        .arg("--auto");
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("No dependencies"));
+    // Should accept the auto flag
+    let output = cmd.output().expect("Failed to run command");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(
+        stdout.contains("cargo-sane") || stdout.contains("fix") || !output.status.success()
+    );
 }

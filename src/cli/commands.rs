@@ -1,10 +1,13 @@
 //! Command implementations
 
 use crate::analyzer::checker::DependencyChecker;
+use crate::analyzer::conflicts::ConflictDetector;
+use crate::analyzer::health::HealthChecker;
 use crate::cli::output;
 use crate::core::dependency::{Dependency, UpdateType};
 use crate::core::manifest::Manifest;
 use crate::updater::DependencyUpdater;
+use crate::utils::cargo::DependencyUsageAnalyzer;
 use crate::Result;
 use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Confirm, MultiSelect};
@@ -296,19 +299,392 @@ fn select_dependencies_to_update<'a>(deps: &[&'a Dependency]) -> Result<Vec<&'a 
 }
 
 pub fn fix_command(manifest_path: Option<String>, auto: bool) -> Result<()> {
-    let _ = (manifest_path, auto);
-    output::print_warning("Fix command not yet implemented");
+    output::print_header("🧠 cargo-sane fix");
+    println!();
+
+    // Load Cargo.toml
+    let manifest = Manifest::find(manifest_path)?;
+
+    if let Some(name) = manifest.package_name() {
+        output::print_info(&format!("Package: {}", name));
+    }
+    output::print_info(&format!("Manifest: {}", manifest.path.display()));
+    println!();
+
+    output::print_info("Analyzing dependency tree for conflicts...");
+    println!();
+
+    // Detect conflicts
+    let detector = ConflictDetector::new();
+    let report = detector.detect_conflicts(&manifest)?;
+
+    if !report.has_conflicts {
+        output::print_success("No version conflicts detected! 🎉");
+        println!();
+        println!(
+            "{}",
+            format!("Total packages in dependency tree: {}", report.total_packages).dimmed()
+        );
+        return Ok(());
+    }
+
+    // Show conflicts
+    println!("🔍 Conflict Analysis:");
+    println!(
+        "  Total packages: {}",
+        report.total_packages.to_string().bold()
+    );
+    println!(
+        "  {} Conflicts found: {}",
+        "⚠️".yellow(),
+        report.conflicts.len().to_string().red().bold()
+    );
+    println!();
+
+    println!("{}", "📋 Version Conflicts:".yellow().bold());
+    for conflict in &report.conflicts {
+        println!();
+        println!("  {} {}", "📦".cyan(), conflict.package_name.bold());
+        println!("    Versions in use:");
+        for version in &conflict.versions {
+            println!("      • {}", version.yellow());
+        }
+        if let Some(suggested) = &conflict.suggested_version {
+            println!("    Suggested: {}", suggested.green().bold());
+        }
+    }
+    println!();
+
+    // Provide fix suggestions
+    println!("{}", "🔧 Recommended Actions:".bold());
+    println!();
+
+    let mut has_fixable = false;
+    for conflict in &report.conflicts {
+        if let Some(suggested) = &conflict.suggested_version {
+            has_fixable = true;
+            println!(
+                "  {} Update to {} {}",
+                "•".green(),
+                conflict.package_name.bold(),
+                suggested.green()
+            );
+        }
+    }
+
+    if !has_fixable {
+        println!("  No automatic fixes available.");
+        println!();
+        output::print_warning("These conflicts are typically caused by transitive dependencies.");
+        println!("  Consider:");
+        println!("    • Updating your direct dependencies");
+        println!("    • Using cargo update to update the lock file");
+        println!("    • Checking if newer versions of your dependencies resolve these conflicts");
+        return Ok(());
+    }
+
+    println!();
+    output::print_info("Note: Version conflicts in the dependency tree are often unavoidable.");
+    println!("  They occur when different packages depend on different versions of the same crate.");
+    println!("  Cargo handles this by compiling multiple versions, which increases binary size.");
+    println!();
+
+    if auto {
+        output::print_info("Auto-fix mode: Attempting to update dependencies...");
+        println!();
+
+        // Try to run cargo update for conflicting packages
+        for conflict in &report.conflicts {
+            if conflict.suggested_version.is_some() {
+                println!("  Updating {}...", conflict.package_name);
+                let result = std::process::Command::new("cargo")
+                    .arg("update")
+                    .arg("-p")
+                    .arg(&conflict.package_name)
+                    .current_dir(manifest.path.parent().unwrap())
+                    .output();
+
+                match result {
+                    Ok(output) if output.status.success() => {
+                        println!("    ✓ Updated {}", conflict.package_name.green());
+                    }
+                    _ => {
+                        println!("    ✗ Failed to update {}", conflict.package_name.red());
+                    }
+                }
+            }
+        }
+
+        println!();
+        output::print_success("Fix attempt complete!");
+        println!("{}", "Run `cargo sane fix` again to check if conflicts remain.".dimmed());
+    } else {
+        let confirm = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Would you like to attempt automatic fixes via `cargo update`?")
+            .default(false)
+            .interact()?;
+
+        if confirm {
+            println!();
+            output::print_info("Running cargo update for conflicting packages...");
+
+            for conflict in &report.conflicts {
+                if conflict.suggested_version.is_some() {
+                    println!("  Updating {}...", conflict.package_name);
+                    let result = std::process::Command::new("cargo")
+                        .arg("update")
+                        .arg("-p")
+                        .arg(&conflict.package_name)
+                        .current_dir(manifest.path.parent().unwrap())
+                        .output();
+
+                    match result {
+                        Ok(output) if output.status.success() => {
+                            println!("    ✓ Updated {}", conflict.package_name.green());
+                        }
+                        _ => {
+                            println!("    ✗ Failed to update {}", conflict.package_name.red());
+                        }
+                    }
+                }
+            }
+
+            println!();
+            output::print_success("Fix attempt complete!");
+            println!(
+                "{}",
+                "Run `cargo sane fix` again to check if conflicts remain.".dimmed()
+            );
+        } else {
+            output::print_info("No changes made.");
+            println!();
+            println!("You can manually fix conflicts by:");
+            println!("  1. Updating your dependencies in Cargo.toml");
+            println!("  2. Running `cargo update` to refresh the lock file");
+            println!("  3. Using `cargo update -p <package>` for specific packages");
+        }
+    }
+
     Ok(())
 }
 
 pub fn clean_command(manifest_path: Option<String>, dry_run: bool) -> Result<()> {
-    let _ = (manifest_path, dry_run);
-    output::print_warning("Clean command not yet implemented");
+    output::print_header("🧠 cargo-sane clean");
+    println!();
+
+    // Load Cargo.toml
+    let manifest = Manifest::find(manifest_path)?;
+
+    if let Some(name) = manifest.package_name() {
+        output::print_info(&format!("Package: {}", name));
+    }
+    output::print_info(&format!("Manifest: {}", manifest.path.display()));
+    println!();
+
+    output::print_info("Scanning source files for dependency usage...");
+
+    // Analyze dependency usage
+    let analyzer = DependencyUsageAnalyzer::new(&manifest.path)?;
+    let declared_deps = manifest.get_dependencies();
+    let unused = analyzer.find_unused_dependencies(&declared_deps)?;
+
+    if unused.is_empty() {
+        output::print_success("All dependencies are being used! 🎉");
+        return Ok(());
+    }
+
+    println!(
+        "\n{} Found {} potentially unused {}:\n",
+        "⚠️".yellow(),
+        unused.len().to_string().bold(),
+        if unused.len() == 1 {
+            "dependency"
+        } else {
+            "dependencies"
+        }
+    );
+
+    for dep in &unused {
+        println!("  • {}", dep.red());
+    }
+    println!();
+
+    output::print_warning("Note: This analysis may have false positives for:");
+    println!("  - Procedural macros (e.g., serde with derive feature)");
+    println!("  - Build dependencies");
+    println!("  - Dependencies used only in doc comments");
+    println!("  - Dependencies re-exported from other crates");
+    println!();
+
+    if dry_run {
+        output::print_info("Dry-run mode: No changes will be made.");
+        println!();
+        println!("To remove these dependencies, you can:");
+        for dep in &unused {
+            println!("  cargo remove {}", dep);
+        }
+    } else {
+        let confirm = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Would you like to remove these dependencies from Cargo.toml?")
+            .default(false)
+            .interact()?;
+
+        if confirm {
+            let mut updater = DependencyUpdater::new(manifest)?;
+            println!("\n{}", "🗑️  Removing unused dependencies...".bold());
+
+            for dep in &unused {
+                match updater.remove_dependency(dep) {
+                    Ok(_) => {
+                        println!("  ✓ Removed {}", dep.green());
+                    }
+                    Err(e) => {
+                        eprintln!("  ✗ Failed to remove {}: {}", dep.red(), e);
+                    }
+                }
+            }
+
+            updater.save()?;
+            println!();
+            output::print_success("Cargo.toml updated successfully!");
+            output::print_info("Backup saved as Cargo.toml.backup");
+            println!();
+            println!(
+                "{}",
+                "Don't forget to run `cargo check` to verify everything still compiles!".dimmed()
+            );
+        } else {
+            output::print_info("No changes made.");
+        }
+    }
+
     Ok(())
 }
 
 pub fn health_command(manifest_path: Option<String>, json: bool) -> Result<()> {
-    let _ = (manifest_path, json);
-    output::print_warning("Health command not yet implemented");
+    if !json {
+        output::print_header("🧠 cargo-sane health");
+        println!();
+    }
+
+    // Load Cargo.toml
+    let manifest = Manifest::find(manifest_path)?;
+
+    if !json {
+        if let Some(name) = manifest.package_name() {
+            output::print_info(&format!("Package: {}", name));
+        }
+        output::print_info(&format!("Manifest: {}", manifest.path.display()));
+        println!();
+    }
+
+    // Check dependencies first to get version info
+    let checker = DependencyChecker::new()?;
+    let dependencies = checker.check_dependencies(&manifest)?;
+
+    if dependencies.is_empty() {
+        if json {
+            println!("{{\"dependencies\": [], \"vulnerable_count\": 0}}");
+        } else {
+            output::print_warning("No dependencies found in Cargo.toml");
+        }
+        return Ok(());
+    }
+
+    // Run health check
+    let health_checker = HealthChecker::new()?;
+    let report = health_checker.check_health(&dependencies)?;
+
+    if json {
+        // Output as JSON
+        let json_output = serde_json::to_string_pretty(&report)
+            .unwrap_or_else(|_| "{}".to_string());
+        println!("{}", json_output);
+    } else {
+        // Print summary
+        println!("🏥 Health Report:");
+        println!(
+            "  Total dependencies: {}",
+            report.total_dependencies.to_string().bold()
+        );
+        println!(
+            "  {} Vulnerable: {}",
+            if report.vulnerable_count > 0 {
+                "⚠️".to_string()
+            } else {
+                "✅".to_string()
+            },
+            if report.vulnerable_count > 0 {
+                report.vulnerable_count.to_string().red().bold().to_string()
+            } else {
+                report.vulnerable_count.to_string().green().to_string()
+            }
+        );
+        println!("  Outdated: {}", report.outdated_count);
+        println!();
+
+        if report.vulnerable_count > 0 {
+            println!("📊 Vulnerability Summary:");
+            if report.critical_count > 0 {
+                println!(
+                    "  {} Critical: {}",
+                    "🔴".red(),
+                    report.critical_count.to_string().red().bold()
+                );
+            }
+            if report.high_count > 0 {
+                println!(
+                    "  {} High: {}",
+                    "🟠",
+                    report.high_count.to_string().red()
+                );
+            }
+            if report.medium_count > 0 {
+                println!(
+                    "  {} Medium: {}",
+                    "🟡",
+                    report.medium_count.to_string().yellow()
+                );
+            }
+            if report.low_count > 0 {
+                println!(
+                    "  {} Low: {}",
+                    "🟢",
+                    report.low_count.to_string().green()
+                );
+            }
+            println!();
+
+            // Show vulnerable dependencies
+            println!("{}", "🚨 Vulnerabilities Found:".red().bold());
+            for dep in &report.dependencies {
+                if dep.is_vulnerable() {
+                    for advisory in &dep.advisories {
+                        println!();
+                        println!(
+                            "  {} {} {} ({})",
+                            advisory.severity.emoji(),
+                            dep.name.bold(),
+                            dep.version.dimmed(),
+                            advisory.severity.as_str().red()
+                        );
+                        println!("  ID: {}", advisory.id.cyan());
+                        println!("  Title: {}", advisory.title);
+                        if let Some(patched) = &advisory.patched_versions {
+                            println!("  Fix: Update to {}", patched.green());
+                        }
+                        if let Some(url) = &advisory.url {
+                            println!("  More info: {}", url.dimmed());
+                        }
+                    }
+                }
+            }
+            println!();
+            output::print_warning("Action required: Update vulnerable dependencies!");
+        } else {
+            output::print_success("No known vulnerabilities found! 🎉");
+        }
+    }
+
     Ok(())
 }
